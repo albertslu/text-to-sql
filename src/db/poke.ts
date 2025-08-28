@@ -1,7 +1,7 @@
-import { ensureDb } from ".";
+import { database } from ".";
 
-function poke(): void {
-  const db = ensureDb();
+const poke = () => {
+  const db = database();
   const stmt = db.prepare("SELECT * FROM cities LIMIT 10");
   const rows = stmt.all();
   console.table(rows);

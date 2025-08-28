@@ -5,22 +5,33 @@ Build a minimal text‑to‑SQL agent using Mastra and run it with the Mastra de
 ### What’s provided
 - Minimal Mastra project with one agent (`text-to-sql-agent`)
 - A tiny SQLite dataset seeded on first run
-    - It will be seeded with data from `world-cities-geoname.csv` that display popularity and info on some cities.
-- Look into `db/poke.ts` to see how to fetch data from the sqlite database
+    - It will be seeded with data from `world-cities-geoname.csv` that display popularity and info on some cities
+- You can fetch data in this manner:
+```typescript
+  # db/poke.ts
+  import {database} from './db';
+
+  const db = database();
+  const stmt = db.prepare("SELECT * FROM cities LIMIT 10");
+  const rows = stmt.all();
+  console.table(rows);
+  
+  db.close();
+```
 
 ### Your task
-- Implement text-to-SQL functionality using Mastra.
-- SQL generated should be able to be run against the database.
+- Implement text-to-sql functionality using Mastra
+- SQL generated should be able to be run against the database
 
-### Run locally
+### How to run
 1. Install dependencies
 ```bash
 cd text-to-sql
 npm install
 ```
-2. Update the `.env.example` file with your OpenAI key (we will provide one)
+2. Update the `.env.example` file with your OpenAI key (we can provide one)
 ```bash
-OPENAI_API_KEY=KEY
+OPENAI_API_KEY=...
 ```
 3. Start the Mastra dev tool
 ```bash

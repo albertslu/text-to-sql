@@ -10,7 +10,7 @@
     "db:init": "tsx src/db/init.ts",
     "db:fresh": "tsx src/db/init.ts --fresh",
     "db:poke": "tsx src/db/poke.ts",
-    "predev": "npm run -s db:init",
+    "predev": "npm run db:init",
     "dev": "mastra dev",
     "lint": "biome check --write --unsafe src && tsc --noEmit"
   },
@@ -23,7 +23,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.2.0",
+    "@biomejs/biome": "^2.2.2",
     "@types/better-sqlite3": "^7.6.13",
     "mastra": "^0.10.20",
     "tsx": "^4.20.3",
