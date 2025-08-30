@@ -27,10 +27,8 @@ const executeSqlTool = {
         };
       }
 
-      // Direct database connection with absolute path for debugging
+      // Direct database connection with absolute path
       const absoluteDbPath = "/Users/albertlu/Documents/GitHub/text-to-sql/local.db";
-      console.log("Attempting to connect to database at:", absoluteDbPath);
-      console.log("Database file exists:", fs.existsSync(absoluteDbPath));
       const db = new Database(absoluteDbPath);
       const stmt = db.prepare(query);
       const results = stmt.all();
