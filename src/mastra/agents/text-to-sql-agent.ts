@@ -2,7 +2,8 @@ import { openai } from "@ai-sdk/openai";
 import type { MastraLanguageModel } from "@mastra/core/agent";
 import { Agent } from "@mastra/core/agent";
 import { z } from "zod";
-import { database } from "../../db/index.js";
+import Database from "better-sqlite3";
+import { dbPath } from "../../db/index.js";
 
 const model: MastraLanguageModel = openai("gpt-4o-mini");
 
@@ -26,7 +27,8 @@ const executeSqlTool = {
         };
       }
 
-      const db = database();
+      // Direct database connection using imported dbPath
+      const db = new Database(dbPath);
       const stmt = db.prepare(query);
       const results = stmt.all();
       db.close();
@@ -90,5 +92,5 @@ EXAMPLES:
 - "What cities are in France?" → SELECT name_en, province FROM cities WHERE country_code = 'FR';
 - "Find cities with population over 5 million" → SELECT name_en, country, population FROM cities WHERE population > 5000000;`,
   model,
-  tools: [executeSqlTool],
+  tools: { execute_sql: executeSqlTool },
 });

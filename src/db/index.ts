@@ -93,9 +93,20 @@ export const database = (): Database.Database => {
   const exists = fs.existsSync(dbPath);
   const db = new Database(dbPath);
 
-  // Initialize the database if it doesn't exist
+  // Initialize the database if it doesn't exist OR if it's empty
   if (!exists) {
     initDB(db);
+  } else {
+    // Check if the database has the cities table and data
+    try {
+      const result = db.prepare("SELECT COUNT(*) as count FROM cities").get() as { count: number };
+      if (result.count === 0) {
+        initDB(db);
+      }
+    } catch (error) {
+      // Table doesn't exist, initialize it
+      initDB(db);
+    }
   }
 
   return db;
