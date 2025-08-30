@@ -3,7 +3,7 @@ import type { MastraLanguageModel } from "@mastra/core/agent";
 import { Agent } from "@mastra/core/agent";
 import { z } from "zod";
 import Database from "better-sqlite3";
-import { dbPath } from "../../db/index.js";
+import fs from "node:fs";
 
 const model: MastraLanguageModel = openai("gpt-4o-mini");
 
@@ -27,8 +27,11 @@ const executeSqlTool = {
         };
       }
 
-      // Direct database connection using imported dbPath
-      const db = new Database(dbPath);
+      // Direct database connection with absolute path for debugging
+      const absoluteDbPath = "/Users/albertlu/Documents/GitHub/text-to-sql/local.db";
+      console.log("Attempting to connect to database at:", absoluteDbPath);
+      console.log("Database file exists:", fs.existsSync(absoluteDbPath));
+      const db = new Database(absoluteDbPath);
       const stmt = db.prepare(query);
       const results = stmt.all();
       db.close();
