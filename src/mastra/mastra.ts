@@ -5,4 +5,7 @@ export const mastra: Mastra = new Mastra({
   agents: {
     "text-to-sql-agent": textToSqlAgent,
   },
+  telemetry: {
+    enabled: false, // Disable telemetry for take-home
+  },
 });
