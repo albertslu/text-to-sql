@@ -19,18 +19,80 @@ const memory = new Memory({
   },
 });
 
+// Tool for fetching city data for analysis
+const fetchCityDataTool = {
+  name: "fetch_city_data",
+  description: "Fetch city data from the database for analysis",
+  parameters: z.object({
+    query: z.string().describe("SQL query to fetch the data"),
+    limit: z.number().optional().describe("Limit the number of results")
+  }),
+  execute: async ({ query, limit }: { query: string; limit?: number }) => {
+    try {
+      const Database = require('better-sqlite3');
+      const path = require('path');
+      
+      const dbPath = path.join(process.cwd(), "local.db");
+      const db = new Database(dbPath);
+      
+      let finalQuery = query;
+      if (limit && !query.toLowerCase().includes('limit')) {
+        finalQuery += ` LIMIT ${limit}`;
+      }
+      
+      const stmt = db.prepare(finalQuery);
+      const results = stmt.all();
+      db.close();
+      
+      return {
+        success: true,
+        data: results,
+        query: finalQuery,
+        rowCount: results.length
+      };
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : "Database query failed",
+        query
+      };
+    }
+  }
+};
+
 // Tool for generating data insights and recommendations
 const analyzeDataTool = {
   name: "analyze_data",
   description: "Perform advanced statistical analysis and generate insights from query results",
   parameters: z.object({
-    data: z.array(z.record(z.any())).describe("The query results to analyze"),
+    data: z.array(z.record(z.any())).optional().describe("The query results to analyze (optional - will fetch if not provided)"),
     analysisType: z.enum(["statistical", "trends", "outliers", "correlations"]).describe("Type of analysis to perform"),
-    context: z.string().describe("Context about what the user is trying to understand")
+    context: z.string().describe("Context about what the user is trying to understand"),
+    dataQuery: z.string().optional().describe("SQL query to fetch data if not provided")
   }),
-  execute: async ({ data, analysisType, context }: { data: any[]; analysisType: string; context: string }) => {
-    if (!data || data.length === 0) {
-      return { error: "No data provided for analysis" };
+  execute: async ({ data, analysisType, context, dataQuery }: { data?: any[]; analysisType: string; context: string; dataQuery?: string }) => {
+    let analysisData = data;
+    
+    // If no data provided, try to fetch it
+    if (!analysisData && dataQuery) {
+      const fetchResult = await fetchCityDataTool.execute({ query: dataQuery });
+      if (fetchResult.success) {
+        analysisData = fetchResult.data;
+      } else {
+        return { error: "Could not fetch data for analysis", details: fetchResult.error };
+      }
+    }
+    
+    // If still no data, provide guidance
+    if (!analysisData || analysisData.length === 0) {
+      return {
+        error: "No data available for analysis",
+        suggestion: "Please provide data or specify a SQL query to fetch the data",
+        availableQueries: [
+          "SELECT * FROM cities LIMIT 100",
+          "SELECT name_en, population, popularity FROM cities",
+          "SELECT * FROM cities WHERE continent = 'Europe'"
+        ]
+      };
     }
 
     const insights = [];
@@ -130,24 +192,39 @@ export const dataAnalystAgent = new Agent({
 
 1. **Deep Analysis**: Perform statistical analysis on query results
 2. **Pattern Recognition**: Identify trends, outliers, and correlations
-3. **Insights Generation**: Provide meaningful interpretations of data
-4. **Recommendations**: Suggest follow-up analyses and investigations
+3. **Data Fetching**: Retrieve city data from the database when needed
+4. **Insights Generation**: Provide meaningful interpretations of data
+5. **Recommendations**: Suggest follow-up analyses and investigations
 
-You excel at:
+You have access to a cities database with 1,047 world cities containing:
+- Population, popularity, geographic coordinates
+- Country, region, continent information
+- City names and administrative divisions
+
+CAPABILITIES:
 - Statistical analysis (mean, median, standard deviation, percentiles)
 - Outlier detection using IQR and z-score methods
 - Correlation analysis between variables
 - Trend identification and forecasting
 - Data quality assessment
 
-When analyzing data, always provide:
-- Clear, actionable insights
-- Statistical context and significance
-- Recommendations for further analysis
-- Visualizations suggestions where appropriate
+WORKFLOW:
+1. If user asks for analysis without providing data, use fetch_city_data to get relevant data
+2. Perform the requested analysis using analyze_data
+3. Provide clear, actionable insights
+4. Suggest follow-up analyses and visualizations
 
-Remember to explain complex statistical concepts in accessible language.`,
+EXAMPLE QUERIES FOR DATA FETCHING:
+- "SELECT * FROM cities LIMIT 100" - General sample
+- "SELECT name_en, population, popularity FROM cities" - Population analysis
+- "SELECT * FROM cities WHERE continent = 'Europe'" - Regional analysis
+- "SELECT * FROM cities ORDER BY population DESC LIMIT 50" - Top cities
+
+Always explain complex statistical concepts in accessible language and provide context for your findings.`,
   model,
-  tools: { analyze_data: analyzeDataTool },
+  tools: { 
+    analyze_data: analyzeDataTool,
+    fetch_city_data: fetchCityDataTool
+  },
   memory,
 });
