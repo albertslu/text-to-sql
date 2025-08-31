@@ -22,6 +22,52 @@ const memory = new Memory({
   },
 });
 
+// Tool for enriching city data with external information
+const enrichCityDataTool = {
+  name: "enrich_city_data",
+  description: "Enrich city data with additional information like weather, timezone, or economic data",
+  parameters: z.object({
+    cityName: z.string().describe("Name of the city to enrich"),
+    countryCode: z.string().describe("Country code of the city"),
+    enrichmentType: z.enum(["timezone", "weather", "demographics", "economics"]).describe("Type of enrichment to add")
+  }),
+  execute: async ({ cityName, countryCode, enrichmentType }: { cityName: string; countryCode: string; enrichmentType: string }) => {
+    // Simulate external API calls with mock data
+    const enrichmentData: Record<string, any> = {
+      timezone: {
+        timezone: "UTC+1",
+        currentTime: new Date().toISOString(),
+        isDaylight: true
+      },
+      weather: {
+        temperature: Math.floor(Math.random() * 30) + 5,
+        condition: ["Sunny", "Cloudy", "Rainy", "Snowy"][Math.floor(Math.random() * 4)],
+        humidity: Math.floor(Math.random() * 100)
+      },
+      demographics: {
+        medianAge: Math.floor(Math.random() * 20) + 30,
+        literacyRate: Math.floor(Math.random() * 20) + 80,
+        urbanizationRate: Math.floor(Math.random() * 30) + 70
+      },
+      economics: {
+        gdpPerCapita: Math.floor(Math.random() * 50000) + 10000,
+        unemploymentRate: Math.floor(Math.random() * 15) + 2,
+        costOfLivingIndex: Math.floor(Math.random() * 100) + 50
+      }
+    };
+
+    return {
+      success: true,
+      city: cityName,
+      country: countryCode,
+      enrichmentType,
+      data: enrichmentData[enrichmentType],
+      source: "Mock API (in production, would use real APIs like OpenWeather, World Bank, etc.)",
+      timestamp: new Date().toISOString()
+    };
+  }
+};
+
 // Tool for generating data insights and query suggestions
 const generateInsightsTool = {
   name: "generate_insights",
@@ -146,6 +192,10 @@ ADVANCED QUERY EXAMPLES:
 - Geographic: "Find cities in the Southern Hemisphere" (latitude < 0)
 - Complex: "Which European countries have the most cities in our database?"
 - Analytical: "Compare population density between Asian and European cities"
+- Statistical: "Show me cities with population within 2 standard deviations of the mean"
+- Ranking: "Rank continents by total population of their cities"
+- Correlation: "Is there a correlation between popularity and population?"
+- Geospatial: "Find cities within 1000km of Paris" (using coordinate calculations)
 
 SAFETY & QUALITY:
 - Only SELECT statements allowed
@@ -156,7 +206,8 @@ SAFETY & QUALITY:
   model,
   tools: { 
     execute_sql: executeSqlTool,
-    generate_insights: generateInsightsTool 
+    generate_insights: generateInsightsTool,
+    enrich_city_data: enrichCityDataTool
   },
   memory,
 });
