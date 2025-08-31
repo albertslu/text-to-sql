@@ -2,14 +2,25 @@ import { openai } from "@ai-sdk/openai";
 import type { MastraLanguageModel } from "@mastra/core/agent";
 import { Agent } from "@mastra/core/agent";
 import { Memory } from "@mastra/memory";
+import { LibSQLStore } from "@mastra/libsql";
 import { z } from "zod";
 import Database from "better-sqlite3";
 import fs from "node:fs";
 
 const model: MastraLanguageModel = openai("gpt-4o-mini");
 
-// Initialize memory with simple configuration
-const memory = new Memory();
+// Configure storage for memory
+const storage = new LibSQLStore({
+  url: "file:./memory.db", // Separate database for agent memory
+});
+
+// Configure memory with proper storage
+const memory = new Memory({
+  storage,
+  options: {
+    lastMessages: 15, // Keep track of recent conversation
+  },
+});
 
 // Tool for generating data insights and query suggestions
 const generateInsightsTool = {
