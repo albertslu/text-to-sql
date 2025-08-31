@@ -68,6 +68,102 @@ const enrichCityDataTool = {
   }
 };
 
+// Tool for explaining SQL queries in plain English
+const explainQueryTool = {
+  name: "explain_query",
+  description: "Explain what a SQL query does in plain English with educational details",
+  parameters: z.object({
+    query: z.string().describe("The SQL query to explain"),
+    level: z.enum(["beginner", "intermediate", "advanced"]).optional().describe("Explanation complexity level")
+  }),
+  execute: async ({ query, level = "intermediate" }: { query: string; level?: string }) => {
+    const queryLower = query.toLowerCase().trim();
+    
+    const explanation = {
+      summary: "",
+      breakdown: [] as string[],
+      concepts: [] as string[],
+      performance: [] as string[],
+      alternatives: [] as string[]
+    };
+
+    // Analyze different parts of the query
+    if (queryLower.includes("select")) {
+      if (queryLower.includes("select *")) {
+        explanation.breakdown.push("📋 **SELECT ***: Retrieves all columns from the table");
+        explanation.concepts.push("Using SELECT * can be inefficient for large tables");
+      } else {
+        explanation.breakdown.push("📋 **SELECT clause**: Specifies which columns to retrieve");
+      }
+    }
+
+    if (queryLower.includes("from cities")) {
+      explanation.breakdown.push("🏙️ **FROM cities**: Data source is the cities table (1,047 world cities)");
+    }
+
+    if (queryLower.includes("where")) {
+      explanation.breakdown.push("🔍 **WHERE clause**: Filters data based on specified conditions");
+      explanation.concepts.push("WHERE clauses help narrow down results and improve performance");
+    }
+
+    if (queryLower.includes("order by")) {
+      if (queryLower.includes("desc")) {
+        explanation.breakdown.push("📊 **ORDER BY ... DESC**: Sorts results in descending order (highest to lowest)");
+      } else {
+        explanation.breakdown.push("📊 **ORDER BY**: Sorts results in ascending order (lowest to highest)");
+      }
+    }
+
+    if (queryLower.includes("limit")) {
+      const limitMatch = queryLower.match(/limit\s+(\d+)/);
+      const limitNum = limitMatch ? limitMatch[1] : "N";
+      explanation.breakdown.push(`🔢 **LIMIT ${limitNum}**: Restricts results to only ${limitNum} rows`);
+      explanation.performance.push("LIMIT is great for performance - only processes the needed rows");
+    }
+
+    if (queryLower.includes("group by")) {
+      explanation.breakdown.push("📊 **GROUP BY**: Groups rows with similar values for aggregation");
+      explanation.concepts.push("GROUP BY is essential for statistical analysis and summaries");
+    }
+
+    if (queryLower.includes("avg(") || queryLower.includes("count(") || queryLower.includes("sum(")) {
+      explanation.breakdown.push("🧮 **Aggregate functions**: Performs calculations across multiple rows");
+      explanation.concepts.push("Aggregates like AVG, COUNT, SUM provide statistical insights");
+    }
+
+    if (queryLower.includes("latitude") || queryLower.includes("longitude")) {
+      explanation.breakdown.push("🌍 **Geographic data**: Uses coordinate data for location-based analysis");
+      explanation.concepts.push("Latitude/longitude enable geographic filtering and analysis");
+    }
+
+    // Generate summary
+    if (queryLower.includes("select") && queryLower.includes("order by") && queryLower.includes("limit")) {
+      explanation.summary = "This query retrieves specific data, sorts it, and limits the results - a common pattern for 'top N' analysis.";
+    } else if (queryLower.includes("group by")) {
+      explanation.summary = "This is an analytical query that groups data for statistical analysis.";
+    } else if (queryLower.includes("where")) {
+      explanation.summary = "This query filters the data to find specific records matching certain criteria.";
+    } else {
+      explanation.summary = "This query retrieves data from the cities database.";
+    }
+
+    // Add alternatives based on query type
+    if (queryLower.includes("order by population desc")) {
+      explanation.alternatives.push("Could add WHERE continent = 'Asia' to focus on specific regions");
+      explanation.alternatives.push("Could use LIMIT 10 instead of 5 for more comprehensive results");
+    }
+
+    return {
+      success: true,
+      query,
+      explanation,
+      educationalTip: level === "beginner" ? 
+        "💡 SQL queries read like instructions: SELECT what you want, FROM where it's stored, WHERE conditions apply, ORDER BY how to sort it." :
+        "💡 Well-structured queries use indexes, appropriate LIMITS, and specific column selection for optimal performance."
+    };
+  }
+};
+
 // Tool for generating data insights and query suggestions
 const generateInsightsTool = {
   name: "generate_insights",
@@ -177,6 +273,7 @@ ENHANCED CAPABILITIES:
 3. **Geographic Intelligence**: Handle coordinate-based queries, distance calculations, hemisphere analysis
 4. **Smart Insights**: Provide interesting observations about the data
 5. **Query Suggestions**: Offer related queries based on current results
+6. **Educational Explanations**: Explain SQL queries in plain English with learning tips
 
 CONVERSATION FLOW:
 1. Understand the user's question and any context from previous interactions
@@ -207,7 +304,8 @@ SAFETY & QUALITY:
   tools: { 
     execute_sql: executeSqlTool,
     generate_insights: generateInsightsTool,
-    enrich_city_data: enrichCityDataTool
+    enrich_city_data: enrichCityDataTool,
+    explain_query: explainQueryTool
   },
   memory,
 });
